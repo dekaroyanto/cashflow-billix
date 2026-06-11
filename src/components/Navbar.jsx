@@ -107,7 +107,7 @@ export default function Navbar() {
                 </p>
               </div>
               <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white text-sm font-bold shadow-md">
-                DA
+                BS
               </div>
             </div>
           </div>
