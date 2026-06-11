@@ -11,13 +11,11 @@ function PinForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [attempts, setAttempts] = useState(0);
   const inputRefs = useRef([]);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/dashboard";
+  const redirectTo = searchParams.get("redirectTo") || "/";
   const CORRECT_PIN = "662026";
-  const MAX_ATTEMPTS = 3;
 
   // Auto focus ke input pertama
   useEffect(() => {
@@ -64,20 +62,15 @@ function PinForm() {
       });
       router.push(redirectTo);
     } else {
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-      setError(`PIN salah! Sisa percobaan: ${MAX_ATTEMPTS - newAttempts}`);
+      // Hanya tampilkan error, tanpa batasan percobaan
+      setError("PIN yang Anda masukkan salah");
       setPin(["", "", "", "", "", ""]);
       setLoading(false);
 
-      if (newAttempts >= MAX_ATTEMPTS) {
-        setError("Terlalu banyak percobaan salah. Aplikasi akan ditutup.");
-        setTimeout(() => {
-          window.close();
-        }, 2000);
-      }
+      // Hapus error setelah 2 detik
+      setTimeout(() => setError(""), 2000);
 
-      setTimeout(() => setError(""), 3000);
+      // Fokus ke input pertama
       inputRefs.current[0]?.focus();
     }
   };
@@ -93,7 +86,7 @@ function PinForm() {
     }
   };
 
-  // Perbaikan fungsi hapus - menghapus digit terakhir
+  // Fungsi hapus - menghapus digit terakhir
   const handleDelete = () => {
     if (loading) return;
 
@@ -175,7 +168,7 @@ function PinForm() {
 
             {/* Error Message */}
             {error && (
-              <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2">
+              <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 animate-shake">
                 <AlertCircle className="w-4 h-4 text-red-600" />
                 <p className="text-red-600 text-sm text-center flex-1">
                   {error}
@@ -326,6 +319,24 @@ function PinForm() {
           </div>
         </div>
       )}
+
+      <style jsx>{`
+        @keyframes shake {
+          0%,
+          100% {
+            transform: translateX(0);
+          }
+          25% {
+            transform: translateX(-5px);
+          }
+          75% {
+            transform: translateX(5px);
+          }
+        }
+        .animate-shake {
+          animation: shake 0.3s ease-in-out;
+        }
+      `}</style>
     </div>
   );
 }
