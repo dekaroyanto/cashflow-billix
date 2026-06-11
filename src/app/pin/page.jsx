@@ -4,51 +4,33 @@
 import { useState, useEffect, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Cookies from "js-cookie";
-import { Keypad, Fingerprint, ArrowLeft, Clock } from "lucide-react";
+import { Fingerprint, Shield, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 function PinForm() {
   const [pin, setPin] = useState(["", "", "", "", "", ""]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [remainingTime, setRemainingTime] = useState(null);
+  const [attempts, setAttempts] = useState(0);
   const inputRefs = useRef([]);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/";
+  const redirectTo = searchParams.get("redirectTo") || "/dashboard";
   const CORRECT_PIN = "662026";
-
-  // Cek sesi yang masih aktif
-  useEffect(() => {
-    const pinVerified = Cookies.get("pin_verified");
-    const pinTime = Cookies.get("pin_time");
-
-    if (pinVerified === "true" && pinTime) {
-      const currentTime = Date.now();
-      const verifiedTime = parseInt(pinTime);
-      const timeDiff = (currentTime - verifiedTime) / 1000;
-
-      if (timeDiff < 300) {
-        router.push(redirectTo);
-      } else if (timeDiff < 300 && timeDiff > 0) {
-        setRemainingTime(Math.floor(300 - timeDiff));
-      }
-    }
-  }, [router, redirectTo]);
+  const MAX_ATTEMPTS = 3;
 
   // Auto focus ke input pertama
   useEffect(() => {
-    if (inputRefs.current[0]) {
-      inputRefs.current[0].focus();
-    }
+    setTimeout(() => {
+      if (inputRefs.current[0]) {
+        inputRefs.current[0].focus();
+      }
+    }, 100);
   }, []);
 
   const handlePinChange = (index, value) => {
-    // Hanya terima angka
-    if (value && !/^\d*$/.test(value)) return;
-
     const newPin = [...pin];
-    newPin[index] = value.slice(-1); // Ambil karakter terakhir saja
+    newPin[index] = value;
     setPin(newPin);
 
     // Auto pindah ke input berikutnya
@@ -62,31 +44,11 @@ function PinForm() {
     }
   };
 
-  const handleKeyDown = (index, e) => {
-    // Handle backspace
-    if (e.key === "Backspace") {
-      if (!pin[index] && index > 0) {
-        // Kosongkan input sebelumnya
-        const newPin = [...pin];
-        newPin[index - 1] = "";
-        setPin(newPin);
-        inputRefs.current[index - 1]?.focus();
-      } else if (pin[index]) {
-        // Kosongkan input saat ini
-        const newPin = [...pin];
-        newPin[index] = "";
-        setPin(newPin);
-      }
-    }
-  };
-
   const handleSubmit = async (fullPin) => {
     if (fullPin.length !== 6) return;
 
     setLoading(true);
-
-    // Simulasi delay verifikasi
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
     if (fullPin === CORRECT_PIN) {
       const currentTime = Date.now();
@@ -100,22 +62,30 @@ function PinForm() {
         path: "/",
         sameSite: "lax",
       });
-
       router.push(redirectTo);
     } else {
-      setError("PIN yang Anda masukkan salah");
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
+      setError(`PIN salah! Sisa percobaan: ${MAX_ATTEMPTS - newAttempts}`);
       setPin(["", "", "", "", "", ""]);
       setLoading(false);
 
-      // Reset focus ke input pertama
-      inputRefs.current[0]?.focus();
+      if (newAttempts >= MAX_ATTEMPTS) {
+        setError("Terlalu banyak percobaan salah. Aplikasi akan ditutup.");
+        setTimeout(() => {
+          window.close();
+        }, 2000);
+      }
 
-      // Hapus error setelah 3 detik
       setTimeout(() => setError(""), 3000);
+      inputRefs.current[0]?.focus();
     }
   };
 
+  // Fungsi untuk numpad virtual
   const handleNumpadClick = (num) => {
+    if (loading) return;
+
     // Cari input kosong pertama
     const emptyIndex = pin.findIndex((digit) => digit === "");
     if (emptyIndex !== -1) {
@@ -123,85 +93,67 @@ function PinForm() {
     }
   };
 
+  // Perbaikan fungsi hapus - menghapus digit terakhir
   const handleDelete = () => {
-    // Cari input terisi terakhir
-    const lastFilledIndex = pin
-      .map((digit, idx) => (digit !== "" ? idx : -1))
-      .filter((idx) => idx !== -1)
-      .pop();
-    if (lastFilledIndex !== undefined) {
+    if (loading) return;
+
+    // Cari index terakhir yang terisi (dari kanan ke kiri)
+    let lastFilledIndex = -1;
+    for (let i = pin.length - 1; i >= 0; i--) {
+      if (pin[i] !== "") {
+        lastFilledIndex = i;
+        break;
+      }
+    }
+
+    if (lastFilledIndex !== -1) {
       const newPin = [...pin];
       newPin[lastFilledIndex] = "";
       setPin(newPin);
+      // Fokus ke input yang baru saja dihapus
       inputRefs.current[lastFilledIndex]?.focus();
     }
   };
 
   const handleClear = () => {
+    if (loading) return;
     setPin(["", "", "", "", "", ""]);
     inputRefs.current[0]?.focus();
-  };
-
-  const formatRemainingTime = (seconds) => {
-    if (!seconds) return "";
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Card Utama */}
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white text-center">
             <div className="mb-2">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg
-                  className="w-8 h-8"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
+                <Shield className="w-8 h-8" />
               </div>
             </div>
             <h1 className="text-2xl font-bold">CashFlow Billix</h1>
-            <p className="text-blue-100 mt-1">Masukkan PIN Transaksi</p>
           </div>
 
           {/* Body */}
           <div className="p-8">
-            {/* Timer Sesi */}
-            {remainingTime && (
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-600 mb-4">
-                <Clock className="w-4 h-4" />
-                <span>
-                  Sesi akan berakhir dalam {formatRemainingTime(remainingTime)}
-                </span>
-              </div>
-            )}
-
-            {/* PIN Input */}
+            {/* PIN Display */}
             <div className="flex justify-center gap-3 mb-8">
               {pin.map((digit, index) => (
                 <div key={index} className="relative">
                   <input
                     ref={(el) => (inputRefs.current[index] = el)}
                     type={showPassword ? "text" : "password"}
-                    inputMode="numeric"
-                    maxLength={1}
                     value={digit}
-                    onChange={(e) => handlePinChange(index, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(index, e)}
-                    className="w-12 h-14 text-center text-2xl font-bold border-2 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+                    onChange={() => {}} // Kosongkan untuk mencegah keyboard
+                    onClick={(e) => {
+                      e.preventDefault();
+                      inputRefs.current[index]?.focus();
+                    }}
+                    onFocus={(e) => {
+                      e.target.setAttribute("readonly", "readonly");
+                    }}
+                    className="w-12 h-14 text-center text-2xl font-bold border-2 rounded-xl focus:border-blue-500 focus:outline-none transition-colors cursor-default"
                     style={{
                       borderColor: error ? "#ef4444" : "#e5e7eb",
                       boxShadow: digit
@@ -209,9 +161,11 @@ function PinForm() {
                         : "none",
                     }}
                     disabled={loading}
+                    readOnly
+                    autoComplete="off"
                   />
                   {digit && !showPassword && (
-                    <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="w-3 h-3 bg-gray-800 rounded-full"></div>
                     </div>
                   )}
@@ -221,75 +175,157 @@ function PinForm() {
 
             {/* Error Message */}
             {error && (
-              <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-xl">
-                <p className="text-red-600 text-sm text-center">{error}</p>
+              <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600" />
+                <p className="text-red-600 text-sm text-center flex-1">
+                  {error}
+                </p>
               </div>
             )}
 
             {/* Show/Hide PIN Toggle */}
             <div className="flex justify-center mb-6">
               <button
+                type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
               >
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
                 {showPassword ? "Sembunyikan PIN" : "Lihat PIN"}
               </button>
             </div>
 
-            {/* Numpad Style Keypad */}
+            {/* Numpad Virtual */}
             <div className="space-y-3">
+              {/* Baris 1: 1 2 3 */}
               <div className="grid grid-cols-3 gap-3">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                  <button
-                    key={num}
-                    onClick={() => handleNumpadClick(num)}
-                    disabled={loading}
-                    className="h-16 text-2xl font-semibold bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
-                  >
-                    {num}
-                  </button>
-                ))}
                 <button
+                  type="button"
+                  onClick={() => handleNumpadClick(1)}
+                  disabled={loading}
+                  className="h-16 text-2xl font-semibold bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors disabled:opacity-50 active:scale-95 transform"
+                >
+                  1
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNumpadClick(2)}
+                  disabled={loading}
+                  className="h-16 text-2xl font-semibold bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors disabled:opacity-50 active:scale-95 transform"
+                >
+                  2
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNumpadClick(3)}
+                  disabled={loading}
+                  className="h-16 text-2xl font-semibold bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors disabled:opacity-50 active:scale-95 transform"
+                >
+                  3
+                </button>
+              </div>
+
+              {/* Baris 2: 4 5 6 */}
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleNumpadClick(4)}
+                  disabled={loading}
+                  className="h-16 text-2xl font-semibold bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors disabled:opacity-50 active:scale-95 transform"
+                >
+                  4
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNumpadClick(5)}
+                  disabled={loading}
+                  className="h-16 text-2xl font-semibold bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors disabled:opacity-50 active:scale-95 transform"
+                >
+                  5
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNumpadClick(6)}
+                  disabled={loading}
+                  className="h-16 text-2xl font-semibold bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors disabled:opacity-50 active:scale-95 transform"
+                >
+                  6
+                </button>
+              </div>
+
+              {/* Baris 3: 7 8 9 */}
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleNumpadClick(7)}
+                  disabled={loading}
+                  className="h-16 text-2xl font-semibold bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors disabled:opacity-50 active:scale-95 transform"
+                >
+                  7
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNumpadClick(8)}
+                  disabled={loading}
+                  className="h-16 text-2xl font-semibold bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors disabled:opacity-50 active:scale-95 transform"
+                >
+                  8
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleNumpadClick(9)}
+                  disabled={loading}
+                  className="h-16 text-2xl font-semibold bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors disabled:opacity-50 active:scale-95 transform"
+                >
+                  9
+                </button>
+              </div>
+
+              {/* Baris 4: Clear 0 Delete */}
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  type="button"
                   onClick={handleClear}
                   disabled={loading}
-                  className="h-16 text-sm font-medium bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
+                  className="h-16 text-sm font-medium bg-red-50 hover:bg-red-100 active:bg-red-200 text-red-600 rounded-xl transition-colors disabled:opacity-50 active:scale-95 transform"
                 >
                   CLEAR
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleNumpadClick(0)}
                   disabled={loading}
-                  className="h-16 text-2xl font-semibold bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
+                  className="h-16 text-2xl font-semibold bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors disabled:opacity-50 active:scale-95 transform"
                 >
                   0
                 </button>
                 <button
+                  type="button"
                   onClick={handleDelete}
                   disabled={loading}
-                  className="h-16 text-sm font-medium bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
+                  className="h-16 text-2xl font-medium bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl transition-colors disabled:opacity-50 active:scale-95 transform flex items-center justify-center"
                 >
                   ⌫
                 </button>
               </div>
             </div>
-
-            {/* Loading Overlay */}
-            {loading && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-xl p-6 flex flex-col items-center">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-                  <p className="mt-3 text-gray-600">Memverifikasi PIN...</p>
-                </div>
-              </div>
-            )}
           </div>
         </div>
-
-        {/* Footer */}
-        <p className="text-center text-white/80 text-sm mt-6">
-          Lupa PIN? Hubungi Administrator
-        </p>
       </div>
+
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 flex flex-col items-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+            <p className="mt-3 text-gray-600">Memverifikasi PIN...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
