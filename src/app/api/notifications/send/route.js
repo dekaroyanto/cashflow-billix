@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 // Setup VAPID keys
 webpush.setVapidDetails(
-  process.env.NEXT_PUBLIC_APP_URL || "https://cashflow-pro.vercel.app",
+  process.env.NEXT_PUBLIC_APP_URL || "https://cashflow-billix.vercel.app",
   process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY,
 );
@@ -37,7 +37,7 @@ export async function POST(request) {
       };
 
       const payload = JSON.stringify({
-        title: title || "CashFlow Pro",
+        title: title || "CashFlow Billix",
         body: body || "",
         type: type || "info",
         url: url || "/",
