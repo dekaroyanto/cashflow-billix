@@ -74,9 +74,7 @@ export default function Navbar() {
                 <h1 className="text-base md:text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                   CashFlow
                 </h1>
-                <p className="text-[10px] md:text-xs text-gray-500">
-                  Deka & Amelia
-                </p>
+                <p className="text-[10px] md:text-xs text-gray-500">Billix</p>
               </div>
             </Link>
 

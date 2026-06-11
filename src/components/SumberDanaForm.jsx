@@ -67,7 +67,7 @@ export default function SumberDanaForm({ onSuccess }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           type="text"
-          placeholder="Nama Bank (contoh: BRI Deka)"
+          placeholder="Nama Sumber Dana"
           value={namaBank}
           onChange={(e) => setNamaBank(e.target.value)}
           className="border-gray-200 focus:border-purple-400 focus:ring-purple-400"

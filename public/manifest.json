@@ -1,7 +1,7 @@
 {
-  "name": "CashFlow Pro",
+  "name": "CashFlow Billix",
   "short_name": "CashFlow",
-  "description": "Aplikasi cashflow untuk Deka & Amelia",
+  "description": "Aplikasi cashflow untuk Billix",
   "theme_color": "#3B82F6",
   "background_color": "#FFFFFF",
   "display": "standalone",

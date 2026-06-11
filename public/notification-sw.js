@@ -32,12 +32,12 @@ self.addEventListener("push", function (event) {
       };
 
       event.waitUntil(
-        self.registration.showNotification(title || "CashFlow Pro", options),
+        self.registration.showNotification(title || "CashFlow Billix", options),
       );
     } catch (error) {
       // Handle plain text notification
       event.waitUntil(
-        self.registration.showNotification("CashFlow Pro", {
+        self.registration.showNotification("CashFlow Billix", {
           body: event.data.text(),
           icon: "/icons/icon-192x192.png",
         }),

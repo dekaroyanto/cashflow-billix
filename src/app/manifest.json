@@ -1,7 +1,7 @@
 {
-  "name": "CashFlow Pro",
+  "name": "CashFlow Billix",
   "short_name": "CashFlow",
-  "description": "Aplikasi cashflow untuk Deka & Amelia",
+  "description": "Aplikasi cashflow untuk Billix",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
