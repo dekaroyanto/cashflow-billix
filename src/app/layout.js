@@ -1,4 +1,6 @@
+// app/layout.js
 import "./globals.css";
+import PinProtection from "@/components/PinProtection"; // Import komponen
 
 export const metadata = {
   title: "CashFlow Billix - Kelola Keuangan",
@@ -41,7 +43,9 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="CashFlow Billix" />
       </head>
-      <body className="min-h-screen">{children}</body>
+      <body className="min-h-screen">
+        <PinProtection> {children}</PinProtection>
+      </body>
     </html>
   );
 }
