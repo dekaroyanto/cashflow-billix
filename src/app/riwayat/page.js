@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import LayoutWrapper from "../../components/LayoutWrapper";
 import { supabase } from "../../lib/supabase";
-import { Filter, Calendar } from "lucide-react";
+import { Filter, Calendar, FileText } from "lucide-react";
 import FilterBulanTahun from "../../components/FilterBulanTahun";
 
 const RiwayatTransaksi = dynamic(
@@ -27,6 +27,11 @@ const EditTransaksiModal = dynamic(
   { ssr: false },
 );
 
+const ExportPdfModal = dynamic(
+  () => import("../../components/ExportPdfModal"),
+  { ssr: false },
+);
+
 export default function RiwayatPage() {
   const [refresh, setRefresh] = useState(0);
   const [editingTransaksi, setEditingTransaksi] = useState(null);
@@ -36,6 +41,7 @@ export default function RiwayatPage() {
   const [tahun, setTahun] = useState(new Date().getFullYear());
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
   useEffect(() => {
     fetchSumberDana();
@@ -82,12 +88,23 @@ export default function RiwayatPage() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
+          className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6"
         >
-          <h1 className="text-2xl font-bold text-gray-800">
-            Riwayat Transaksi 📜
-          </h1>
-          <p className="text-gray-500">Lihat, edit, atau hapus transaksi</p>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">
+              Riwayat Transaksi 📜
+            </h1>
+            <p className="text-gray-500">Lihat, edit, atau hapus transaksi</p>
+          </div>
+          <div>
+            <button
+              onClick={() => setIsExportOpen(true)}
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+            >
+              <FileText className="h-4 w-4" />
+              Export Rekap PDF
+            </button>
+          </div>
         </motion.div>
 
         {/* Filter Section */}
@@ -174,6 +191,11 @@ export default function RiwayatPage() {
             }}
           />
         )}
+
+        <ExportPdfModal
+          isOpen={isExportOpen}
+          onClose={() => setIsExportOpen(false)}
+        />
       </div>
     </LayoutWrapper>
   );
